@@ -140,20 +140,25 @@ Solution* fDynamique(unsigned int n,unsigned int maxWeight, unsigned int maxVolu
             for(unsigned int k = 0; k < maxVolume + 1; k++) {
                 if (i == 0) {
                 } else {
-                    if ((j < data->objects[i - 1].weight) ||(k < data->objects[i - 1].volume)){
+                    if ((j < data->objects[i - 1].weight)
+                        ||(k < data->objects[i - 1].volume)){
+                        //Volume ou poids insufissant pour ajouter cet objet
                         tabF[i].tab[j][k] = tabF[i - 1].tab[j][k];
                     } else {
+                        //le cas ou l'objet est pris
                         f2 = tabF[i - 1].tab
                                 [j - data->objects[i - 1].weight]
                                 [k - data->objects[i - 1].volume];
+                        //test sur le gain total dans les deux cas
                         if ((tabF[i - 1].tab[j][k]->value) >=
                                 (f2->value + (data->objects[i - 1].value))) {
-                            //On suppose que l'object i n'est pas pris
+                            //l'object i n'est pas pris
                             tabF[i].tab[j][k] = tabF[i - 1].tab[j][k];
                         } else {
-                            //On suppose que l'object i est pris
+                            //l'object i est pris
                             cloneSolution(tabF[i].tab[j][k], f2, i);
-                            tabF[i].tab[j][k]->value = f2->value + data->objects[i - 1].value;
+                            tabF[i].tab[j][k]->value = f2->value
+                                                       + data->objects[i - 1].value;
                             tabF[i].tab[j][k]->X[i - 1] = true;
                         }
                     }
