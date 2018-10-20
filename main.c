@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
 /********************/
+
+clock_t begin, end;
+double time_spent;
 
 struct _Item{
     unsigned int weight;
@@ -18,6 +22,10 @@ struct _Solution{
     bool *X;
     unsigned int value;
 }typedef Solution;
+
+struct _SolutionMatrix{
+    Solution***tab;
+}typedef MatrixSolution;
 
 
 /*******************/
@@ -51,7 +59,9 @@ static unsigned int NUMBER_OF_OBJECTS = 20;
 
 static unsigned int MAXIMAL_WEIGHT = 520;//kg
 
-static unsigned int MAXIMAL_VOLUME = 347;//cm
+static unsigned int MAXIMAL_VOLUME = 300;//m3 * 100
+
+MatrixSolution tabF[20+1];
 
 
 /********************/
@@ -59,10 +69,13 @@ static unsigned int MAXIMAL_VOLUME = 347;//cm
 
 void printSolution(Solution* sol, unsigned int numberOfObjects){
     printf("\nPrinting the solution ...\n");
+    printf("\nThe optimal value = %u \n", sol->value);
+    printf("The objects : ");
     for(unsigned int i = 0; i < numberOfObjects; i++) {
-        printf("| \t%d \t|\n", sol->X[i]);
+        //printf("| \t%d \t|\n", sol->X[i]);
+        if(sol->X[i] == 1 ) printf("%d,",i+1);
     }
-    printf("DONE\n");
+    printf("\n\n");
 }
 Solution* initSolution(unsigned int length){
     Solution *sol = malloc(sizeof(Solution));
@@ -99,50 +112,51 @@ Solution* f(unsigned int n,unsigned int maxWeight, unsigned int maxVolume) {
     }
 }
 /********************************/
-Solution* cloneSolution(Solution* sol){
-    Solution *solC = malloc(sizeof(Solution));
-    solC->value = sol->value;
+Solution* cloneSolution(Solution*solC, Solution* sol, unsigned int n){
 
-    solC->X = malloc(data->numberOfObjects*sizeof(bool));
-    for(unsigned int i = 0; i < data->numberOfObjects ;i++) {
+    solC->value = sol->value;
+    for(unsigned int i = 0; i < n ;i++) {
         solC->X[i] = sol->X[i];
     }
 
     return solC;
 };
-struct _SolutionMatrix{
-    Solution***tab;
-}typedef MatrixSolution;
-Solution* fDynamique(unsigned int n,unsigned int maxWeight, unsigned int maxVolume) {
 
-    MatrixSolution tabF[n+1];
-    Solution *f1;
-    Solution *f2;
+void mkarr(unsigned int n,unsigned int maxWeight, unsigned int maxVolume){
     for (unsigned int i = 0; i < n + 1; i++) {
         tabF[i].tab = malloc((maxWeight+1)* sizeof(Solution));
         for (unsigned int j = 0; j < maxWeight + 1; j++) {
             tabF[i].tab[j] = malloc((maxVolume+1)* sizeof(Solution));
             for(unsigned int k = 0; k < maxVolume + 1; k++) {
-                if (i == 0) {
                     tabF[i].tab[j][k] = initSolution(data->numberOfObjects);
+            }
+        }
+    }
+}
+
+Solution* fDynamique(unsigned int n,unsigned int maxWeight, unsigned int maxVolume) {
+
+    Solution *f2;
+    for (unsigned int i = 0; i < n + 1; i++) {
+        for (unsigned int j = 0; j < maxWeight + 1; j++) {
+            for(unsigned int k = 0; k < maxVolume + 1; k++) {
+                if (i == 0) {
                 } else {
-                    //On suppose que l'object i n'est pas pris
                     if ((j < data->objects[i - 1].weight) ||(k < data->objects[i - 1].volume)){
-                        tabF[i].tab[j][k] = cloneSolution(tabF[i - 1].tab[j][k]);
+                        tabF[i].tab[j][k] = tabF[i - 1].tab[j][k];
                     } else {
-                        //On suppose que l'object i est pris
-                        f1 = cloneSolution(tabF[i - 1].tab[j][k]);
-                        f2 = cloneSolution(tabF[i - 1].tab
-                                           [j - data->objects[i - 1].weight]
-                                           [k - data->objects[i - 1].volume]);
-                        f2->value = f2->value + (data->objects[i - 1].value);
-                        if (f1->value >= f2->value) {
-                            tabF[i].tab[j][k] = f1;
-                            free(f2);
+                        f2 = tabF[i - 1].tab
+                                [j - data->objects[i - 1].weight]
+                                [k - data->objects[i - 1].volume];
+                        if ((tabF[i - 1].tab[j][k]->value) >=
+                                (f2->value + (data->objects[i - 1].value))) {
+                            //On suppose que l'object i n'est pas pris
+                            tabF[i].tab[j][k] = tabF[i - 1].tab[j][k];
                         } else {
-                            tabF[i].tab[j][k] = f2;
+                            //On suppose que l'object i est pris
+                            cloneSolution(tabF[i].tab[j][k], f2, i);
+                            tabF[i].tab[j][k]->value = f2->value + data->objects[i - 1].value;
                             tabF[i].tab[j][k]->X[i - 1] = true;
-                            free(f1);
                         }
                     }
                 }
@@ -154,19 +168,31 @@ Solution* fDynamique(unsigned int n,unsigned int maxWeight, unsigned int maxVolu
 
 int main() {
 
+    clock_t begin, end;
+    double time_spent;
+
     Solution* optimalSolution;
 
     data = malloc(sizeof(Data));
     data->numberOfObjects = NUMBER_OF_OBJECTS;
     data->objects = &obj;
 
+    begin = clock();
     optimalSolution = f(NUMBER_OF_OBJECTS, MAXIMAL_WEIGHT, MAXIMAL_VOLUME);
+    end = clock();
     printSolution(optimalSolution, NUMBER_OF_OBJECTS);
-    printf("\nThe optimal value = %u ", optimalSolution->value);
+    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("Execution time = %f \n\n", time_spent);
 
+    mkarr(NUMBER_OF_OBJECTS, MAXIMAL_WEIGHT, MAXIMAL_VOLUME);
+
+    begin = clock();
     optimalSolution = fDynamique(NUMBER_OF_OBJECTS, MAXIMAL_WEIGHT, MAXIMAL_VOLUME);
+    end = clock();
+
     printSolution(optimalSolution, NUMBER_OF_OBJECTS);
-    printf("\nThe optimal value = %u ", optimalSolution->value);
+    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("Execution time = %f \n\n", time_spent);
 
     free(data);
 
