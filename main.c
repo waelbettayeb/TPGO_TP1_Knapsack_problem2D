@@ -112,14 +112,12 @@ Solution* f(unsigned int n,unsigned int maxWeight, unsigned int maxVolume) {
     }
 }
 /********************************/
-Solution* cloneSolution(Solution*solC, Solution* sol, unsigned int n){
+void cloneSolution(Solution*solC, Solution* sol, unsigned int n){
 
     solC->value = sol->value;
     for(unsigned int i = 0; i < n ;i++) {
         solC->X[i] = sol->X[i];
     }
-
-    return solC;
 };
 
 void mkarr(unsigned int n,unsigned int maxWeight, unsigned int maxVolume){
